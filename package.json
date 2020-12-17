@@ -9,6 +9,7 @@
   "author": "Justin L",
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "sqlite3": "^5.0.0"
   }
 }

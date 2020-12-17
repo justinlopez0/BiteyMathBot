@@ -3,10 +3,18 @@
 // Using .env file to store discord token
 require('dotenv').config({path:__dirname+'/.env'});
 
-// Discord.js library
 const Discord = require('discord.js');
+let sqlite3 = require('sqlite3').verbose();
+let Stats = require('./models/stats.js');
+let Settings = require('./models/settings.js');
 
 const client = new Discord.Client();
+
+let db = new sqlite3.Database(__dirname+'/bitey_math_bot.db');
+
+// Models
+const stats = new Stats.Stats(db); 
+//const settings = new Settings.Settings(db);
 
 let settings = {
   commandPrefix: '!',
@@ -19,6 +27,7 @@ let settings = {
 }
 
 let gameLoop = null;
+let question = '';
 let answer = '';
 let unansweredRounds = 0;
 let isAnswered = false;
@@ -33,10 +42,13 @@ client.on('message', message => {
   
   let baseCommand = message.content.split(settings.commandPrefix)[1];
 
-  if (answer == message.content) {
+  if (answer == message.content && answer != '') {
     message.channel.send('Good job **' + message.author.username + '**! You are correct!');
     unansweredRounds = 0;
     isAnswered = true;
+
+    // Record correct answer to stats table
+    stats.addScore(message.author.username, question, answer);
   }
 
   switch(baseCommand) {
@@ -52,7 +64,8 @@ client.on('message', message => {
             let firstNumber = between(settings.minNumber, settings.maxNumber);
             let secondNumber = between(settings.minNumber, settings.maxNumber);
 
-            message.channel.send('What is ' + firstNumber + ' + ' + secondNumber + '?');
+            question = 'What is ' + firstNumber + ' + ' + secondNumber + '?';
+            message.channel.send(question);
             answer = firstNumber + secondNumber;
 
             if (!isAnswered) {
@@ -76,6 +89,21 @@ client.on('message', message => {
           message.channel.send('Game has ended!');
           console.log('Stopping game');
           break;
+      case 'top':
+          stats.getTopScores(5, function(scores) {
+            let topScores = '';
+            scores.forEach(function(score) {
+              topScores += '**' + score.score + '** - ' + score.user + '\n';
+            });
+
+            const topScoreEmbed = new Discord.MessageEmbed()
+              .setColor('#ffffff')
+              .setTitle('Top Scores')
+              .setDescription(topScores);
+
+          
+            message.channel.send(topScoreEmbed);
+          });
   }
 
 });
