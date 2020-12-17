@@ -1,6 +1,9 @@
 'use strict';
 
-// Import the discord.js module
+// Using .env file to store discord token
+require('dotenv').config({path:__dirname+'/.env'});
+
+// Discord.js library
 const Discord = require('discord.js');
 
 const client = new Discord.Client();
@@ -38,6 +41,7 @@ client.on('message', message => {
 
   switch(baseCommand) {
       case 'start':
+          // If bot is already started, no need to start it again
           if (started) break;
 
           message.channel.send('Game will start in ' + (settings.roundInterval / 1000) + ' seconds!');
@@ -66,6 +70,7 @@ client.on('message', message => {
 
           break;
       case 'stop':
+          // If bot is already stopped, no need to stop it again
           if(!started) break;
           stopBot();
           message.channel.send('Game has ended!');
@@ -80,10 +85,11 @@ function stopBot() {
   started = false;
 }
 
+// Return an integer between min and max
 function between(min, max) {  
   return Math.floor(
     Math.random() * (max - min) + min
   )
 }
 
-client.login('Nzg4MDgxNDUxMDQzMTI3MzQ2.X9eUCw.pQu01QwTXumfXCMPoPXEky88Vng');
+client.login(process.env.DISCORD_TOKEN);
