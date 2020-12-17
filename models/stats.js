@@ -1,6 +1,6 @@
 'use strict';
 
-class Stats {
+module.exports = class Stats {
     constructor(db) {
         this.db = db;
     }
@@ -35,8 +35,4 @@ class Stats {
             }
         });
     }
-}
-
-module.exports = {
-    Stats: Stats
 }

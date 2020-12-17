@@ -3,17 +3,22 @@
 // Using .env file to store discord token
 require('dotenv').config({path:__dirname+'/.env'});
 
+const {
+  performance
+} = require('perf_hooks');
+
 const Discord = require('discord.js');
 let sqlite3 = require('sqlite3').verbose();
-let Stats = require('./models/stats.js');
-let Settings = require('./models/settings.js');
+let Stats = require('./models/Stats.js');
+let FastestAnswer = require('./models/FastestAnswer.js');
 
 const client = new Discord.Client();
 
 let db = new sqlite3.Database(__dirname+'/bitey_math_bot.db');
 
 // Models
-const stats = new Stats.Stats(db); 
+const stats = new Stats(db);
+const fastestAnswer = new FastestAnswer(db);
 //const settings = new Settings.Settings(db);
 
 let settings = {
@@ -22,7 +27,7 @@ let settings = {
   minNumber: 1,
   maxNumber: 10,
   //@todo mathType: 'addition',
-  roundInterval: 8000,
+  roundInterval: 6000,
   unansweredRoundsLimit: 5 // Amount of unanswered rounds before the bot will stop
 }
 
@@ -32,6 +37,8 @@ let answer = '';
 let unansweredRounds = 0;
 let isAnswered = false;
 let started = false;
+let questionStartTime = 0;
+let questionEndTime = 0;
 
 client.on('ready', () => {
   console.log('I am ready!');
@@ -43,12 +50,14 @@ client.on('message', message => {
   let baseCommand = message.content.split(settings.commandPrefix)[1];
 
   if (answer == message.content && answer != '') {
-    message.channel.send('Good job **' + message.author.username + '**! You are correct!');
+    let questionEndTime = performance.now();
+    message.channel.send('Good job **' + message.author.username + '**! You are correct! (' + ((questionEndTime - questionStartTime)/1000).toFixed(4) + 's)');
     unansweredRounds = 0;
     isAnswered = true;
-
+    
     // Record correct answer to stats table
     stats.addScore(message.author.username, question, answer);
+
   }
 
   switch(baseCommand) {
@@ -60,6 +69,7 @@ client.on('message', message => {
           console.log('Starting game');
 
           gameLoop = setInterval(() => {
+            questionStartTime = performance.now();
             isAnswered = false;
             let firstNumber = between(settings.minNumber, settings.maxNumber);
             let secondNumber = between(settings.minNumber, settings.maxNumber);
