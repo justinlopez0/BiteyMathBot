@@ -57,7 +57,6 @@ client.on('message', message => {
     
     // Record correct answer to stats table
     stats.addScore(message.author.username, question, answer);
-
   }
 
   switch(baseCommand) {
