@@ -10,7 +10,7 @@ const {
 const Discord = require('discord.js');
 let sqlite3 = require('sqlite3').verbose();
 let Stats = require('./models/Stats.js');
-let FastestAnswer = require('./models/FastestAnswer.js');
+//let FastestAnswer = require('./models/FastestAnswer.js');
 
 const client = new Discord.Client();
 
@@ -18,7 +18,7 @@ let db = new sqlite3.Database(__dirname+'/bitey_math_bot.db');
 
 // Models
 const stats = new Stats(db);
-const fastestAnswer = new FastestAnswer(db);
+//const fastestAnswer = new FastestAnswer(db);
 //const settings = new Settings.Settings(db);
 
 let settings = {
@@ -39,6 +39,8 @@ let isAnswered = false;
 let started = false;
 let questionStartTime = 0;
 let questionEndTime = 0;
+let fastestAnswer = 0;
+let fastestAnswerUser = '';
 
 client.on('ready', () => {
   console.log('I am ready!');
@@ -51,10 +53,20 @@ client.on('message', message => {
 
   if (answer == message.content && answer != '') {
     let questionEndTime = performance.now();
-    message.channel.send('Good job **' + message.author.username + '**! You are correct! (' + ((questionEndTime - questionStartTime)/1000).toFixed(4) + 's)');
+    let answerTime = ((questionEndTime - questionStartTime)/1000).toFixed(4);
+
+    if (answerTime < fastestAnswer || fastestAnswer == 0) {
+      fastestAnswer = answerTime;
+      fastestAnswerUser = message.author.username;
+    }
+
+    message.channel.send('Good job **' + message.author.username + '**! You are correct! (' + answerTime + 's)');
     unansweredRounds = 0;
     isAnswered = true;
-    
+  
+    // Reset answer (prevent multiple correct answers)
+    answer = '';
+
     // Record correct answer to stats table
     stats.addScore(message.author.username, question, answer);
   }
@@ -94,6 +106,7 @@ client.on('message', message => {
       case 'stop':
           // If bot is already stopped, no need to stop it again
           if(!started) break;
+          
           stopBot();
           message.channel.send('Game has ended!');
           console.log('Stopping game');
@@ -113,6 +126,13 @@ client.on('message', message => {
           
             message.channel.send(topScoreEmbed);
           });
+
+          message.channel.send('<:biteyFire:793546678577397772><:biteyFire:793546678577397772> **' + fastestAnswerUser + '** has the fastest answer with a time of **' + fastestAnswer + '** <:biteyFire:793546678577397772><:biteyFire:793546678577397772>');
+          break;
+      case 'roll':
+        let randomNumber = between(1, 100);
+        message.channel.send(randomNumber);
+        break;
   }
 
 });
